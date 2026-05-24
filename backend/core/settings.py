@@ -37,8 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
     'rest_framework', ## IMPLEMENTA DJANGO REST FRAMEWORK
-    'corsheaders' ## PERMITE LA CONEXION CON OTROS PUERTOS 
+    'corsheaders', ## PERMITE LA CONEXION CON OTROS PUERTOS 
+    
+    'apps.services', 
 ]
 
 MIDDLEWARE = [
