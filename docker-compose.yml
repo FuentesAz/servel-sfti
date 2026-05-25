@@ -3,7 +3,7 @@ services:
     backend:
         build: ./backend
         container_name: backend
-        command: python manage.py runserver 0.0.0.0:8000
+        command: sh /app/entrypoint.sh
         restart: unless-stopped            
         volumes:
             - ./backend:/app
@@ -45,7 +45,7 @@ services:
         volumes:
             - postgres_data:/var/lib/postgresql/data
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U $POSTGRES_USER -d $POSTGRES_DB"]
+            test: ["CMD-SHELL", "pg_isready -U postgres -d serpagostec_db"]
             interval: 5s
             timeout: 5s
             retries: 5
