@@ -1,0 +1,58 @@
+{% extends "admin/change_list.html" %}
+
+{% block content_title %}
+
+<h1>Reporte de Órdenes de Servicio</h1>
+
+<div style="
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:15px;
+    margin-bottom:20px;
+">
+
+    <div class="module">
+        <h2>Total órdenes</h2>
+        <p>{{ reportes.total_ordenes }}</p>
+    </div>
+
+    <div class="module">
+        <h2>Pendientes</h2>
+        <p>{{ reportes.pendientes }}</p>
+    </div>
+
+    <div class="module">
+        <h2>Pagadas</h2>
+        <p>{{ reportes.pagadas }}</p>
+    </div>
+
+    <div class="module">
+        <h2>Ingresos</h2>
+        <p>${{ reportes.total_ingresos }}</p>
+    </div>
+
+    <div class="module">
+        <h2>IVA</h2>
+        <p>${{ reportes.total_iva }}</p>
+    </div>
+
+    <div class="module">
+        <h2>Comisiones</h2>
+        <p>${{ reportes.total_comisiones }}</p>
+    </div>
+
+    <div class="module">
+        <h2>Ganancia taller</h2>
+        <p>${{ reportes.total_ganancia }}</p>
+    </div>
+
+    <div class="module">
+        <h2>Total piezas</h2>
+        <p>${{ reportes.total_piezas }}</p>
+    </div>
+
+</div>
+
+{% endblock %}
+
+{{ block.super }}
