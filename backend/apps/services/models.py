@@ -96,23 +96,45 @@ class OrdenServicio(models.Model):
     )
     
     def save(self, *args, **kwargs):
-        
-        self.subtotal = self.costo_servicio
-        
-        if self.facturado:
-            self.iva = self.costo_servicio * Decimal('0.16')
-        else:
-            self.iva = Decimal('0.00')
-            
-        self.comision = self.costo_servicio / Decimal('2')
-        self.ganancia_taller = self.costo_servicio / Decimal('2')
-        
-        if self.status == 'paid' and not self.fecha_cierre:
-            self.fecha_cierre = timezone.now()
-        
-        super().save(*args, **kwargs)
 
-        self.total = self.subtotal + self.iva  
+        if self.facturado:
+            
+            self.subtotal = (
+                self.costo_servicio /
+                Decimal('1.16')
+            )
+    
+            self.iva = (
+                self.costo_servicio -
+                self.subtotal
+            )
+
+        else:
+        
+            self.subtotal = self.costo_servicio
+    
+            self.iva = Decimal('0.00')
+
+        self.comision = (
+            self.subtotal /
+            Decimal('2')
+        )
+
+        self.ganancia_taller = (
+            self.subtotal /
+            Decimal('2')
+        )
+
+        if self.status == 'paid' and not self.fecha_cierre:
+           self.fecha_cierre = timezone.now()
+
+        # costo_servicio ya incluye IVA si está facturado
+        self.total = (
+            self.costo_servicio +
+            self.total_piezas
+        )
+    
+        super().save(*args, **kwargs)
         
     def __str__(self):
         

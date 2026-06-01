@@ -1,0 +1,50 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+
+{% block content %}
+{{ block.super }}  <style>
+    /* Estilos para acoplar la sección personalizada en el Home */
+    .app-reportes {
+        margin-top: 20px;
+    }
+    .app-reportes table {
+        width: 100%;
+    }
+    .app-reportes table caption {
+        background: var(--primary, #417690);
+        color: var(--primary-contrast, #fff);
+        text-align: left;
+        font-weight: bold;
+        padding: 8px 10px;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .app-reportes th.link-cell {
+        padding: 10px;
+        font-size: 0.9rem;
+        width: 30%;
+    }
+    .app-reportes th.link-cell a {
+        font-weight: bold;
+        color: var(--link-color, #417690);
+    }
+</style>
+
+<div class="module app-reportes">
+    <table>
+        <caption>Sección de Reportes Administrativos</caption>
+        <tbody>
+            <tr class="row1">
+                <th scope="row" class="link-cell">
+                    <a href="{% url 'pagos_tecnicos' %}">
+                        Reporte de Pagos Técnicos
+                    </a>
+                </th>
+
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

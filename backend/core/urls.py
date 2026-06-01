@@ -17,6 +17,19 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
+from apps.services.views import pagos_tecnicos
+
+
 urlpatterns = [
-    path('admin/', admin.site.urls),
+
+    path(
+        'admin/pagos-tecnicos/',
+        pagos_tecnicos,
+        name='pagos_tecnicos'
+    ),
+
+    path(
+        'admin/',
+        admin.site.urls
+    ),
 ]
