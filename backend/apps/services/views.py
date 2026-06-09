@@ -4,7 +4,7 @@ from django.utils import timezone
 
 from .pdf_service import generar_reporte_pdf
 
-from .models import OrdenServicio
+from .models import OrdenServicio, PagoTecnico
 from .forms import CierrePagosForm
 
 
@@ -80,10 +80,32 @@ def pagos_tecnicos(request):
             ordenes = OrdenServicio.objects.filter(
                 id__in=ordenes_ids
             )
+            
+            pago = PagoTecnico.objects.create(
+                
+                total_ordenes = ordenes.count(),
+                
+                ingreso_total = ordenes.aaggregate(
+                    total=Sum('total')
+                )['total'] or 0,
+                
+                total_comision = ordenes.aggregate(
+                    total=Sum('comision')
+                )['total'] or 0,
+                
+                total_iva = ordenes.aggregate(
+                    total=Sum('iva')
+                )['total'] or 0,
+                
+                total_piezas = ordenes.aggregate(
+                    total=Sum('total_piezas')
+                )['total'] or 0
+            )
 
             ordenes.update(
                 status='paid',
-                fecha_cierre=timezone.now()
+                fecha_cierre=timezone.now(),
+                pago_tecnico = pago
             )
 
             return generar_reporte_pdf(

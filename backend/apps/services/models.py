@@ -5,15 +5,37 @@ from django.utils import timezone
 
 # Create your models here.
 
-#------ GENERA LA INFORMACION DEL TECNICO --------
+#------ GENERA LA INFORMACION DEL TECNICO --------------------
 class Tecnico(models.Model):
     name = models.CharField(max_length=100)
 
     def __str__(self):
         return self.name
-#--------------------------------------------------
+#-------------------------------------------------------------
 
+class PagoTecnico(models.Model):
+    fecha_pago = models.DateField(auto_now_add=True)
+    
+    total_ordenes = models.PositiveIntegerField(default=0)
+    
+    ingreso_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    total_comision = models.DecimalField(max_digits=10,decimal_places=2,default=0)
+    
+    total_iva = models.DecimalField(max_digits=10,decimal_places=2,default=0)
+    
+    total_piezas = models.DecimalField(max_digits=10,decimal_places=2,default=0)
+    
+    def __str__(self):
+        return (
+            f"Pago #{self.id} - "
+            f"{self.fecha_pago.strftime('%d/%m/%Y')}"
+        )
+
+#------ GENERA LA INFORMACION DE LA ORDEN DE SERVICIO --------
 class OrdenServicio(models.Model):
+
+    #------ GENERA LA INFORMACION DE LA ORDEN DE SERVICIO ----
     class StatusChoice(models.TextChoices):
         PENDING = 'pending','Pendiente'
         PAID = 'paid','Pagado'
@@ -95,6 +117,14 @@ class OrdenServicio(models.Model):
         null=True
     )
     
+    pago_tecnico = models.ForeignKey(
+        'PagoTecnico',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='ordenes'
+    )
+    
     def save(self, *args, **kwargs):
 
         if self.facturado:
@@ -153,7 +183,11 @@ class OrdenServicio(models.Model):
         f"Creación: {fecha_c} | "
         f"Cierre: {fecha_f}"
     )
-    
+#-------------------------------------------------------------
+
+
+#------ GENERA LA INFORMACION DE LAS PIEZAS --------
+
 class Piezas(models.Model):
     
     class PaymentMethodChoices(models.TextChoices):

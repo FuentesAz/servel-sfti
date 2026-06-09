@@ -2,14 +2,22 @@ from django.contrib import admin
 from django.db.models import Sum
 from django.utils import timezone
 
+#------ IMPORTACIÓN DE LOS MODELOS ---------------------------
 from .models import (
     Tecnico,
     OrdenServicio,
-    Piezas
+    Piezas,
+    PagoTecnico
 )
-
+#-------------------------------------------------------------
+#
+#
+#------ REGISTRO DE LOS MODELOS ------------------------------
 admin.site.register(Tecnico)
-
+admin.site.register(PagoTecnico)
+#-------------------------------------------------------------
+#
+# 
 class PartesInline(admin.TabularInline):
     model = Piezas
     extra = 1
