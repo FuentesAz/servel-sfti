@@ -95,15 +95,20 @@ class OrdenServicioAdmin(admin.ModelAdmin):
     actions = ['marcar_como_pagadas']
 
     @admin.action(description='Marcar órdenes como pagadas')
-    def marcar_como_pagadas(
-        self,
-        request,
-        queryset
-    ):
+    def marcar_como_pagadas(self, request, queryset):
+
+        pago = PagoTecnico.objects.create(
+            total_ordenes=queryset.count(),
+            ingreso_total=queryset.aggregate(total=Sum('total'))['total'] or 0,
+            total_comision=queryset.aggregate(total=Sum('comision'))['total'] or 0,
+            total_iva=queryset.aggregate(total=Sum('iva'))['total'] or 0,
+            total_piezas=queryset.aggregate(total=Sum('total_piezas'))['total'] or 0,
+        )
 
         queryset.update(
             status='paid',
-            fecha_cierre=timezone.now()
+            fecha_cierre=timezone.now(),
+            pago_tecnico=pago
         )
     
     def get_readonly_fields(self, request, obj=None):

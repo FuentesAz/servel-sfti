@@ -26,6 +26,10 @@ class PagoTecnico(models.Model):
     
     total_piezas = models.DecimalField(max_digits=10,decimal_places=2,default=0)
     
+    class Meta:
+        verbose_name = 'Historial de pago'
+        verbose_name_plural = 'Historial de pagos'
+
     def __str__(self):
         return (
             f"Pago #{self.id} - "

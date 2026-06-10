@@ -5,10 +5,16 @@ from rest_framework.routers import DefaultRouter
 from .api_views import (
     TecnicoViewSet,
     OrdenServicioViewSet,
-    PiezasViewSet
+    PiezasViewSet,
+    PagoTecnicoViewSet
 )
 
 routers = DefaultRouter()
+
+routers.register(
+    'pagos',
+    PagoTecnicoViewSet
+)
 
 routers.register(
     'tecnicos',

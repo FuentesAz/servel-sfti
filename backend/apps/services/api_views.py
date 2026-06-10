@@ -3,14 +3,36 @@ from rest_framework import viewsets
 from .models import (
     Tecnico,
     OrdenServicio,
-    Piezas
+    Piezas,
+    PagoTecnico
 )
 
 from .serializers import (
     TecnicoSerializer,
     OrdenServicioSerializer,
-    PiezasSerializer
+    PiezasSerializer,
+    PagoTecnicoSerializer
 )
+
+class PagoTecnicoViewSet(viewsets.ModelViewSet):
+    queryset = (
+        PagoTecnico.objects
+        .prefetch_related('ordenes')
+        .order_by('-fecha_pago')
+    )
+    
+    serializer_class=PagoTecnicoSerializer
+    
+    ordering_fields = [
+        'fecha_pago',
+        'total_ordenes',
+        'ingreso_total',
+        'total_comision',
+        'total_iva',
+        'total_piezas',
+    ]
+
+    ordering = ['-fecha_pago']
 
 class TecnicoViewSet(viewsets.ModelViewSet):
     queryset = Tecnico.objects.all()

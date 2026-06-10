@@ -3,7 +3,8 @@ from rest_framework import serializers
 from .models import (
     Tecnico,
     OrdenServicio,
-    Piezas
+    Piezas,
+    PagoTecnico
 )
 
 
@@ -56,3 +57,14 @@ class OrdenServicioSerializer(serializers.ModelSerializer):
             'pago_tecnico',
             'piezas',
         ]
+        
+class PagoTecnicoSerializer(serializers.ModelSerializer):
+    
+    ordenes = OrdenServicioSerializer(
+        many=True,
+        read_only=True
+    )
+    
+    class Meta:
+        model = PagoTecnico
+        fields = '__all__'
