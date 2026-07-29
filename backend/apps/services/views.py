@@ -85,7 +85,7 @@ def pagos_tecnicos(request):
                 
                 total_ordenes = ordenes.count(),
                 
-                ingreso_total = ordenes.aaggregate(
+                ingreso_total = ordenes.aggregate(
                     total=Sum('total')
                 )['total'] or 0,
                 

@@ -5,4 +5,5 @@ django-cors-headers
 python-decouple
 reportlab
 django-filter
-djangorestframework-simplejwt 
+djangorestframework-simplejwt
+gunicorn

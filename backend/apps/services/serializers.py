@@ -38,6 +38,7 @@ class OrdenServicioSerializer(serializers.ModelSerializer):
         model = OrdenServicio
 
         fields = [
+            'id',
             'numero_orden',
             'tecnico',
             'tecnico_nombre',
