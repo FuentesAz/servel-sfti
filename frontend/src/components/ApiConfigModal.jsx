@@ -74,7 +74,7 @@ export default function ApiConfigModal({ isOpen, onClose, onSaveConfig }) {
                   className="input-control"
                   value={apiBase}
                   onChange={(e) => setApiBase(e.target.value)}
-                  placeholder="http://localhost:8000/api/v1"
+                  placeholder="/api/v1"
                   required
                 />
               </div>

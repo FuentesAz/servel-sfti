@@ -8,10 +8,12 @@ import {
   Settings, 
   ShieldCheck,
   Building2,
-  DollarSign
+  DollarSign,
+  UserCheck,
+  X
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, useMock, onOpenApiConfig }) {
+export default function Sidebar({ activeTab, setActiveTab, useMock, onOpenApiConfig, isMobileOpen, onCloseMobile }) {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard de Servicios', icon: LayoutDashboard },
     { id: 'estadisticas', label: 'Estadísticas & Analíticas', icon: BarChart3 },
@@ -19,10 +21,17 @@ export default function Sidebar({ activeTab, setActiveTab, useMock, onOpenApiCon
     { id: 'historial', label: 'Historial de Pagos', icon: History },
     { id: 'tecnicos', label: 'Técnicos', icon: Users },
     { id: 'piezas', label: 'Repuestos & Piezas', icon: Wrench },
+    { id: 'solicitudes', label: 'Aprobación de Usuarios', icon: UserCheck },
   ];
 
+
+  const handleNavClick = (tabId) => {
+    setActiveTab(tabId);
+    if (onCloseMobile) onCloseMobile();
+  };
+
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar ${isMobileOpen ? 'mobile-open' : ''}`}>
       {/* Brand Header */}
       <div className="sidebar-header">
         <div className="brand-logo-badge">
@@ -32,6 +41,11 @@ export default function Sidebar({ activeTab, setActiveTab, useMock, onOpenApiCon
           <h2>Servel SFTI</h2>
           <span>Control de Servicios & Pagos</span>
         </div>
+        {onCloseMobile && (
+          <button className="mobile-close-btn" onClick={onCloseMobile} title="Cerrar Menú">
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -45,7 +59,7 @@ export default function Sidebar({ activeTab, setActiveTab, useMock, onOpenApiCon
             <button
               key={item.id}
               className={`sidebar-nav-item ${isActive ? 'active' : ''}`}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => handleNavClick(item.id)}
             >
               <Icon size={20} />
               <span>{item.label}</span>

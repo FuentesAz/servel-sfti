@@ -9,7 +9,9 @@ import TecnicosView from './components/TecnicosView';
 import PiezasView from './components/PiezasView';
 import EstadisticasView from './components/EstadisticasView';
 import HistorialPagosView from './components/HistorialPagosView';
+import UsuariosPendientesView from './components/UsuariosPendientesView';
 import ApiConfigModal from './components/ApiConfigModal';
+
 import LoginView from './components/LoginView';
 import { api } from './api/client';
 import { Printer, X, RefreshCw } from 'lucide-react';
@@ -65,6 +67,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [useMock, setUseMock] = useState(api.useMock);
   const [searchGlobal, setSearchGlobal] = useState('');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Data states
   const [ordenes, setOrdenes] = useState([]);
@@ -122,12 +125,42 @@ export default function App() {
   };
 
   const handleBatchMarcarPagadas = async (ids) => {
-    await api.procesarCierrePagos(ids);
+    const res = await api.procesarCierrePagos(ids);
+    const pagoId = res?.pago?.id || res?.id || Date.now();
+    const idSet = new Set((ids || []).map(id => String(id)));
+
+    setOrdenes(prev => prev.map(o => {
+      if (idSet.has(String(o.id))) {
+        return {
+          ...o,
+          status: 'paid',
+          fecha_cierre: new Date().toISOString(),
+          pago_tecnico: pagoId,
+          pago_tecnico_id: pagoId
+        };
+      }
+      return o;
+    }));
     await loadData();
   };
 
   const handleProcesarCierre = async (ids) => {
-    await api.procesarCierrePagos(ids);
+    const res = await api.procesarCierrePagos(ids);
+    const pagoId = res?.pago?.id || res?.id || Date.now();
+    const idSet = new Set((ids || []).map(id => String(id)));
+
+    setOrdenes(prev => prev.map(o => {
+      if (idSet.has(String(o.id))) {
+        return {
+          ...o,
+          status: 'paid',
+          fecha_cierre: new Date().toISOString(),
+          pago_tecnico: pagoId,
+          pago_tecnico_id: pagoId
+        };
+      }
+      return o;
+    }));
     await loadData();
   };
 
@@ -156,12 +189,20 @@ export default function App() {
 
   return (
     <div className="app-container">
+      {/* Mobile Drawer Backdrop Overlay */}
+      <div 
+        className={`sidebar-overlay ${isMobileSidebarOpen ? 'active' : ''}`}
+        onClick={() => setIsMobileSidebarOpen(false)}
+      />
+
       {/* Navigation Sidebar */}
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab}
         useMock={useMock}
         onOpenApiConfig={() => setIsApiConfigOpen(true)}
+        isMobileOpen={isMobileSidebarOpen}
+        onCloseMobile={() => setIsMobileSidebarOpen(false)}
       />
 
       {/* Main View Wrapper */}
@@ -176,6 +217,7 @@ export default function App() {
           }}
           onLogout={handleLogout}
           currentUser={currentUser}
+          onToggleMobileSidebar={() => setIsMobileSidebarOpen(prev => !prev)}
         />
 
         {/* Content Body */}
@@ -191,6 +233,7 @@ export default function App() {
                   {activeTab === 'historial' && 'Historial de Pagos a Técnicos'}
                   {activeTab === 'tecnicos' && 'Gestión de Técnicos'}
                   {activeTab === 'piezas' && 'Historial de Repuestos & Piezas'}
+                  {activeTab === 'solicitudes' && 'Aprobación de Solicitudes de Usuario'}
                 </h1>
                 <p>
                   {activeTab === 'dashboard' && 'Visión general de las órdenes de servicio, ingresos y métricas globales'}
@@ -199,6 +242,7 @@ export default function App() {
                   {activeTab === 'historial' && 'Registro histórico de cierres de pago procesados, auditoría y descarga de reportes PDF'}
                   {activeTab === 'tecnicos' && 'Administre el personal técnico y consulte su rendimiento financiero'}
                   {activeTab === 'piezas' && 'Consolidado de piezas de repuesto utilizadas en servicios'}
+                  {activeTab === 'solicitudes' && 'Autorice o rechace cuentas de usuarios registradas en la plataforma'}
                 </p>
               </div>
             </div>
@@ -262,6 +306,11 @@ export default function App() {
             {activeTab === 'piezas' && (
               <PiezasView ordenes={ordenes} />
             )}
+
+            {activeTab === 'solicitudes' && (
+              <UsuariosPendientesView onUserApproved={loadData} />
+            )}
+
           </ErrorBoundary>
         </main>
       </div>

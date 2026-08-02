@@ -33,7 +33,7 @@ export default function OrderTable({
 
   // Filter & Search Logic
   const filteredOrdenes = useMemo(() => {
-    return ordenes.filter(item => {
+    const filtered = ordenes.filter(item => {
       // Global Search
       if (searchGlobal.trim()) {
         const query = searchGlobal.toLowerCase();
@@ -57,6 +57,13 @@ export default function OrderTable({
       }
 
       return true;
+    });
+
+    return filtered.sort((a, b) => {
+      const dateA = a.fecha_creacion ? new Date(a.fecha_creacion).getTime() : 0;
+      const dateB = b.fecha_creacion ? new Date(b.fecha_creacion).getTime() : 0;
+      if (dateB !== dateA) return dateB - dateA;
+      return (parseInt(b.id) || 0) - (parseInt(a.id) || 0);
     });
   }, [ordenes, searchGlobal, statusFilter, facturadoFilter, tecnicoFilter]);
 
@@ -209,9 +216,10 @@ export default function OrderTable({
           {selectedIds.length > 0 && (
             <button 
               className="btn btn-success btn-sm"
-              onClick={() => {
-                onBatchMarcarPagadas(selectedIds);
+              onClick={async () => {
+                const idsToProcess = [...selectedIds];
                 setSelectedIds([]);
+                await onBatchMarcarPagadas(idsToProcess);
               }}
             >
               <CheckCircle size={15} />
@@ -333,13 +341,6 @@ export default function OrderTable({
                           onClick={() => onEditOrden(orden)}
                         >
                           <Edit3 size={15} />
-                        </button>
-                        <button 
-                          className="icon-btn" 
-                          title="Imprimir Comprobante"
-                          onClick={() => onPrintOrdenReceipt(orden)}
-                        >
-                          <Printer size={15} />
                         </button>
                         <button 
                           className="icon-btn" 

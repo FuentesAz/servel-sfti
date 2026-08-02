@@ -11,28 +11,74 @@ import {
 import { generarReportePDF } from '../utils/pdfGenerator';
 
 export default function CierrePagos({ ordenes, tecnicos, pagosHistorial, onProcesarCierre }) {
-  const [fechaInicio, setFechaInicio] = useState('2026-06-26');
-  const [fechaFin, setFechaFin] = useState('2026-07-25');
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getOneYearAgoStr = () => {
+    const d = new Date();
+    d.setFullYear(d.getFullYear() - 1);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const getLocalDateStr = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return (dateStr || '').split('T')[0];
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return (dateStr || '').split('T')[0];
+    }
+  };
+
+  const [fechaInicio, setFechaInicio] = useState(getOneYearAgoStr());
+  const [fechaFin, setFechaFin] = useState(getTodayStr());
   const [tecnicoId, setTecnicoId] = useState('all');
   const [reporteGenerado, setReporteGenerado] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Filter pending orders matching criteria
   const ordenesElegibles = useMemo(() => {
     return ordenes.filter(o => {
-      if (o.status !== 'pending') return false;
+      // Must not be already paid or assigned to a PagoTecnico closure
+      if (o.status === 'paid' || o.status === 'PAID' || Boolean(o.pago_tecnico) || Boolean(o.pago_tecnico_id)) return false;
 
-      if (tecnicoId !== 'all' && o.tecnico !== parseInt(tecnicoId)) {
-        return false;
+      if (tecnicoId !== 'all') {
+        const selectedTech = tecnicos.find(t => String(t.id) === String(tecnicoId));
+        const techVal = typeof o.tecnico === 'object' && o.tecnico !== null ? o.tecnico.id : o.tecnico;
+        const techName = o.tecnico_nombre || (typeof o.tecnico === 'object' ? o.tecnico?.name : null);
+
+        const matchById = String(techVal) === String(tecnicoId);
+        const matchByName = selectedTech && (
+          String(techVal).toLowerCase() === String(selectedTech.name).toLowerCase() ||
+          (techName && String(techName).toLowerCase() === String(selectedTech.name).toLowerCase())
+        );
+
+        if (!matchById && !matchByName) {
+          return false;
+        }
       }
 
       if (o.fecha_creacion) {
-        const f = o.fecha_creacion.split('T')[0];
-        if (f < fechaInicio || f > fechaFin) return false;
+        const f = getLocalDateStr(o.fecha_creacion);
+        if (fechaInicio && f < fechaInicio) return false;
+        if (fechaFin && f > fechaFin) return false;
       }
 
       return true;
     });
-  }, [ordenes, fechaInicio, fechaFin, tecnicoId]);
+  }, [ordenes, fechaInicio, fechaFin, tecnicoId, tecnicos]);
 
   // Compute calculated metrics for selected pending orders matching Django calculations
   const summaryReporte = useMemo(() => {
@@ -55,7 +101,9 @@ export default function CierrePagos({ ordenes, tecnicos, pagosHistorial, onProce
     };
   }, [ordenesElegibles]);
 
-  const handleProcesarYDescargarPDF = () => {
+  const [isProcessing, setIsProcessing] = useState(false);
+
+  const handleProcesarYDescargarPDF = async () => {
     if (ordenesElegibles.length === 0) {
       alert('No hay órdenes pendientes en el rango de fechas seleccionado.');
       return;
@@ -63,20 +111,33 @@ export default function CierrePagos({ ordenes, tecnicos, pagosHistorial, onProce
 
     const techName = tecnicoId === 'all' ? 'Todos' : tecnicos.find(t => t.id === parseInt(tecnicoId))?.name;
 
+    const countProcessed = ordenesElegibles.length;
+
     const reporteObj = {
       fechaInicio,
       fechaFin,
       tecnicoNombre: techName,
-      ordenes: ordenesElegibles,
+      ordenes: [...ordenesElegibles],
       ...summaryReporte
     };
 
     const ids = ordenesElegibles.map(o => o.id);
-    onProcesarCierre(ids);
-    setReporteGenerado(reporteObj);
+    setIsProcessing(true);
+    setSuccessMessage('');
+    try {
+      // 1. Process closure in backend/store first
+      await onProcesarCierre(ids);
+      setReporteGenerado(reporteObj);
+      setSuccessMessage(`¡Cierre procesado exitosamente! ${countProcessed} orden(es) cambiaron a PAGADO y ya están registradas en el Historial de Pagos.`);
 
-    // Generate exact PDF file
-    generarReportePDF(reporteObj);
+      // 2. Generate PDF download
+      generarReportePDF(reporteObj);
+    } catch (err) {
+      console.error('Error al procesar el cierre:', err);
+      alert('Hubo un problema al registrar el cierre de pagos: ' + (err.message || 'Error desconocido'));
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleDescargarSoloPDF = () => {
@@ -100,6 +161,24 @@ export default function CierrePagos({ ordenes, tecnicos, pagosHistorial, onProce
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      {successMessage && (
+        <div style={{
+          backgroundColor: '#dcfce7',
+          color: '#15803d',
+          border: '1px solid #86efac',
+          borderRadius: '10px',
+          padding: '14px 18px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          fontWeight: 600,
+          fontSize: '0.95rem'
+        }}>
+          <CheckCircle2 size={20} color="#16a34a" />
+          <span>{successMessage}</span>
+        </div>
+      )}
+
       {/* Cierre Form Card */}
       <div className="filter-bar-card" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid #e2e8f0', paddingBottom: '12px' }}>
@@ -184,10 +263,10 @@ export default function CierrePagos({ ordenes, tecnicos, pagosHistorial, onProce
           <button 
             className="btn btn-success"
             onClick={handleProcesarYDescargarPDF}
-            disabled={ordenesElegibles.length === 0}
+            disabled={ordenesElegibles.length === 0 || isProcessing}
           >
             <CheckCircle2 size={18} />
-            <span>Procesar Cierre y Descargar Reporte PDF</span>
+            <span>{isProcessing ? 'Procesando Cierre...' : 'Procesar Cierre y Descargar Reporte PDF'}</span>
           </button>
         </div>
       </div>

@@ -704,18 +704,167 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
-/* Responsive adjustments */
+/* Mobile Sidebar Overlay & Drawer */
+.mobile-toggle-btn {
+  display: none;
+}
+
+.mobile-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  display: none;
+  padding: 4px;
+  margin-left: auto;
+}
+
+.mobile-close-btn:hover {
+  color: #ffffff;
+}
+
+.sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 90;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Responsive adjustments for Tablets & Smartphones */
 @media (max-width: 900px) {
-  .sidebar {
-    width: 70px;
+  .mobile-toggle-btn {
+    display: flex;
   }
+
+  .mobile-close-btn {
+    display: flex;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    transform: translateX(-100%);
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.25);
+    z-index: 100;
+  }
+
+  .sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
   .brand-info, .sidebar-nav-item span, .menu-category-title, .api-mode-card {
+    display: block;
+  }
+
+  .top-header {
+    padding: 0 16px;
+    height: 64px;
+  }
+
+  .header-search {
+    width: 100%;
+    max-width: 220px;
+  }
+
+  .date-pill {
     display: none;
   }
+
+  .content-body {
+    padding: 16px;
+    gap: 16px;
+  }
+
+  .page-title-section {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .page-title-section h1 {
+    font-size: 1.35rem;
+  }
+
   .form-grid {
     grid-template-columns: 1fr;
   }
+
   .form-group.full-width {
     grid-column: span 1;
+  }
+
+  .part-item-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 576px) {
+  .header-search {
+    display: none;
+  }
+
+  .top-header {
+    gap: 8px;
+  }
+
+  .btn {
+    padding: 8px 12px;
+    font-size: 0.82rem;
+  }
+
+  .metrics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-bar-card {
+    padding: 14px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .select-control, .input-control {
+    width: 100%;
+  }
+
+  .table-header-bar {
+    padding: 12px 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .modal-content {
+    max-width: 95vw;
+    margin: 10px;
+  }
+
+  .modal-body {
+    padding: 16px;
+  }
+
+  .modal-header, .modal-footer {
+    padding: 14px 16px;
   }
 }

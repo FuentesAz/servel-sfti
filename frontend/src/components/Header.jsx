@@ -1,8 +1,8 @@
 import React from 'react';
-import { Search, Calendar, Plus, LogOut } from 'lucide-react';
+import { Search, Calendar, Plus, LogOut, Menu } from 'lucide-react';
 import { sanitizeSafeName } from '../utils/sanitize';
 
-export default function Header({ searchGlobal, setSearchGlobal, onOpenNewOrderModal, onLogout, currentUser }) {
+export default function Header({ searchGlobal, setSearchGlobal, onOpenNewOrderModal, onLogout, currentUser, onToggleMobileSidebar }) {
   const todayFormatted = new Date().toLocaleDateString('es-ES', {
     weekday: 'short',
     year: 'numeric',
@@ -14,15 +14,25 @@ export default function Header({ searchGlobal, setSearchGlobal, onOpenNewOrderMo
 
   return (
     <header className="top-header">
-      {/* Global Search Bar */}
-      <div className="header-search">
-        <Search size={18} color="#94a3b8" />
-        <input
-          type="text"
-          placeholder="Buscar orden (#), técnico, piezas..."
-          value={searchGlobal}
-          onChange={(e) => setSearchGlobal(sanitizeSafeName(e.target.value))}
-        />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1 }}>
+        <button 
+          className="icon-btn mobile-toggle-btn" 
+          onClick={onToggleMobileSidebar}
+          title="Abrir Menú"
+        >
+          <Menu size={20} />
+        </button>
+
+        {/* Global Search Bar */}
+        <div className="header-search">
+          <Search size={18} color="#94a3b8" />
+          <input
+            type="text"
+            placeholder="Buscar orden (#), técnico, piezas..."
+            value={searchGlobal}
+            onChange={(e) => setSearchGlobal(sanitizeSafeName(e.target.value))}
+          />
+        </div>
       </div>
 
       {/* Header Actions & Profile */}

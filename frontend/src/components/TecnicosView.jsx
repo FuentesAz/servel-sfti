@@ -81,7 +81,7 @@ export default function TecnicosView({ tecnicos, ordenes, onCreateTecnico }) {
 
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <DollarSign size={15} /> Facturación total:
+                    <DollarSign size={15} /> Total servicio:
                   </span>
                   <strong>{formatCurrency(totalGenerado)}</strong>
                 </div>

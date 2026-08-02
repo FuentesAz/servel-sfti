@@ -56,8 +56,9 @@ export default function HistorialPagosView({ pagosHistorial = [], ordenes = [], 
   };
 
   const handlePrintPagoReport = (pago) => {
-    // Find associated orders for this payment
-    const pagoOrders = ordenes.filter(o => o.pago_tecnico === pago.id || o.status === 'paid');
+    const pagoOrders = (pago.ordenes && pago.ordenes.length > 0) 
+      ? pago.ordenes 
+      : ordenes.filter(o => String(o.pago_tecnico) === String(pago.id) || String(o.pago_tecnico_id) === String(pago.id));
     
     generarReportePDF({
       fechaInicio: pago.fecha_pago,

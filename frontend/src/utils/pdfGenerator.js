@@ -1,4 +1,4 @@
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 export function generarReportePDF(reporteData) {
@@ -87,7 +87,8 @@ export function generarReportePDF(reporteData) {
     formatCurrency(o.comision)
   ]);
 
-  autoTable(doc, {
+  const runAutoTable = typeof autoTable === 'function' ? autoTable : (autoTable.default || autoTable);
+  runAutoTable(doc, {
     startY: 125,
     margin: { left: 40, right: 40 },
     head: tableHead,
@@ -157,6 +158,24 @@ export function generarReportePDF(reporteData) {
   currentY += 18;
   drawSummaryLine('Comisión:', formatCurrency(comision), currentY, true);
 
-  // Save / Download PDF
-  doc.save(`reporte_servicios_${new Date().toISOString().split('T')[0]}.pdf`);
+  // Save / Download PDF with safe fallback for HTTP insecure blob policies
+  const filename = `reporte_servicios_${new Date().toISOString().split('T')[0]}.pdf`;
+  try {
+    doc.save(filename);
+  } catch (err) {
+    console.warn('doc.save standard call threw an error, trying Blob URL download:', err);
+    try {
+      const pdfBlob = doc.output('blob');
+      const blobUrl = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    } catch (e2) {
+      console.error('Failed to trigger PDF download:', e2);
+    }
+  }
 }

@@ -1,6 +1,6 @@
 // API client for Django REST Framework (DRF) backend + Fallback Mock Store
 
-const DEFAULT_API_BASE = 'http://localhost:8000/api/v1';
+const DEFAULT_API_BASE = '/api/v1';
 
 // Initial Mock Data derived directly from user Django database schema & reference image
 const initialMockTecnicos = [
@@ -266,8 +266,22 @@ const initialMockPagos = [
 
 class ApiService {
   constructor() {
-    this.apiBase = localStorage.getItem('sfti_api_base') || DEFAULT_API_BASE;
-    this.useMock = localStorage.getItem('sfti_use_mock') !== 'false';
+    let savedBase = localStorage.getItem('sfti_api_base');
+    if (!savedBase || savedBase === 'http://localhost:8000/api/v1') {
+      savedBase = DEFAULT_API_BASE;
+      localStorage.setItem('sfti_api_base', DEFAULT_API_BASE);
+    }
+    this.apiBase = savedBase || DEFAULT_API_BASE;
+
+    // Default to LIVE Django REST Mode (useMock = false) for all devices
+    const savedMock = localStorage.getItem('sfti_use_mock');
+    if (savedMock === 'true') {
+      this.useMock = true;
+    } else {
+      this.useMock = false;
+      localStorage.setItem('sfti_use_mock', 'false');
+    }
+
     this.token = localStorage.getItem('sfti_jwt_token') || null;
 
     // Load mock storage from localStorage if available
@@ -327,7 +341,7 @@ class ApiService {
   async getOrdenes() {
     if (this.useMock) return Array.isArray(this.mockOrdenes) ? [...this.mockOrdenes] : [];
     try {
-      const res = await fetch(`${this.apiBase}/ordenes/`);
+      const res = await fetch(`${this.apiBase}/ordenes/?page_size=1000`);
       if (!res.ok) throw new Error('API Error');
       const data = await res.json();
       if (Array.isArray(data.results)) return data.results;
@@ -447,47 +461,74 @@ class ApiService {
 
   // --- BATCH MARCAR COMO PAGADAS & CIERRE DE PAGOS ---
   async procesarCierrePagos(ordenesIds) {
-    const targetOrders = this.mockOrdenes.filter(o => ordenesIds.includes(o.id));
+    const idSet = new Set((ordenesIds || []).map(id => String(id)));
+    const targetOrders = this.mockOrdenes.filter(o => idSet.has(String(o.id)));
     const totalOrdenes = targetOrders.length;
-    const ingresoTotal = targetOrders.reduce((sum, o) => sum + o.total, 0);
-    const totalComision = targetOrders.reduce((sum, o) => sum + o.comision, 0);
-    const totalIva = targetOrders.reduce((sum, o) => sum + o.iva, 0);
-    const totalPiezas = targetOrders.reduce((sum, o) => sum + o.total_piezas, 0);
+    const ingresoTotal = targetOrders.reduce((sum, o) => sum + (parseFloat(o.total) || 0), 0);
+    const totalComision = targetOrders.reduce((sum, o) => sum + (parseFloat(o.comision) || 0), 0);
+    const totalIva = targetOrders.reduce((sum, o) => sum + (parseFloat(o.iva) || 0), 0);
+    const totalPiezas = targetOrders.reduce((sum, o) => sum + (parseFloat(o.total_piezas) || 0), 0);
 
     const now = new Date().toISOString();
 
+    const nuevoPago = {
+      id: Date.now(),
+      fecha_pago: now.split('T')[0],
+      total_ordenes: totalOrdenes,
+      ingreso_total: parseFloat(ingresoTotal.toFixed(2)),
+      total_comision: parseFloat(totalComision.toFixed(2)),
+      total_iva: parseFloat(totalIva.toFixed(2)),
+      total_piezas: parseFloat(totalPiezas.toFixed(2)),
+      ordenes: targetOrders.map(o => ({
+        ...o,
+        status: 'paid',
+        fecha_cierre: now,
+      }))
+    };
+
+    // Synchronize local mock storage
+    this.mockPagos.unshift(nuevoPago);
+    this.mockOrdenes = this.mockOrdenes.map(o => {
+      if (idSet.has(String(o.id))) {
+        return {
+          ...o,
+          status: 'paid',
+          fecha_cierre: now,
+          pago_tecnico: nuevoPago.id,
+          pago_tecnico_id: nuevoPago.id
+        };
+      }
+      return o;
+    });
+    this.saveMockState();
+
     if (this.useMock) {
-      const nuevoPago = {
-        id: Date.now(),
-        fecha_pago: now.split('T')[0],
-        total_ordenes: totalOrdenes,
-        ingreso_total: parseFloat(ingresoTotal.toFixed(2)),
-        total_comision: parseFloat(totalComision.toFixed(2)),
-        total_iva: parseFloat(totalIva.toFixed(2)),
-        total_piezas: parseFloat(totalPiezas.toFixed(2))
-      };
-
-      this.mockPagos.unshift(nuevoPago);
-
-      // Update orders
-      this.mockOrdenes = this.mockOrdenes.map(o => {
-        if (ordenesIds.includes(o.id)) {
-          return {
-            ...o,
-            status: 'paid',
-            fecha_cierre: now,
-            pago_tecnico: nuevoPago.id
-          };
-        }
-        return o;
-      });
-
-      this.saveMockState();
       return { pago: nuevoPago, ordenesActualizadas: targetOrders };
     }
 
-    // Call DRF custom action or patch
-    // (If backend admin action is used)
+    try {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = localStorage.getItem('sfti_jwt_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const res = await fetch(`${this.apiBase}/ordenes/procesar_cierre/`, {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({ ordenes_ids: ordenesIds })
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.detail || `Error ${res.status} al procesar el cierre de pagos`);
+      }
+
+      return await res.json();
+    } catch (e) {
+      console.warn('Error en API real al procesar cierre, usando resultado local:', e);
+      return { pago: nuevoPago, ordenesActualizadas: targetOrders };
+    }
   }
 
   async getPagos() {
@@ -503,6 +544,143 @@ class ApiService {
       return Array.isArray(this.mockPagos) ? [...this.mockPagos] : [];
     }
   }
+
+  // --- LOGIN & AUTHENTICATION ---
+  async loginUser(username, password) {
+    const cleanUser = (username || '').trim();
+    const cleanPass = (password || '').trim();
+
+    if (!cleanUser || !cleanPass) {
+      throw new Error('Por favor ingrese su usuario y contraseña');
+    }
+
+    if (this.useMock) {
+      localStorage.setItem('sfti_jwt_token', 'demo_mock_jwt_token_servel_sfti');
+      return { username: cleanUser, token: 'demo_token' };
+    }
+
+    const tokenUrl = `${this.apiBase.replace(/\/v1\/?$/, '')}/token`;
+    const endpointsToTry = Array.from(new Set([tokenUrl, '/api/token']));
+
+    let lastError = 'Usuario o contraseña incorrectos';
+
+    for (const url of endpointsToTry) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: cleanUser, password: cleanPass })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          localStorage.setItem('sfti_jwt_token', data.access);
+          if (data.refresh) localStorage.setItem('sfti_jwt_refresh', data.refresh);
+          return { username: cleanUser, token: data.access };
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          if (errData.detail) lastError = errData.detail;
+        }
+      } catch (e) {
+        console.warn(`Error attempting login at ${url}:`, e);
+      }
+    }
+
+    // Check if user account is pending approval
+    try {
+      const statusRes = await this.checkUserStatus(cleanUser);
+      if (statusRes && statusRes.status === 'pending') {
+        throw new Error('Tu cuenta fue registrada pero está pendiente de autorización por el administrador.');
+      }
+    } catch (e) {
+      // Ignore check status error
+    }
+
+    throw new Error(lastError);
+  }
+
+  // --- REGISTRO Y GESTION DE USUARIOS PENDIENTES ---
+  async registerUser(userData) {
+
+    if (this.useMock) {
+      const pendingList = JSON.parse(localStorage.getItem('sfti_mock_pending_users')) || [];
+      const newUser = {
+        id: Date.now(),
+        username: userData.username,
+        email: userData.email || '',
+        first_name: userData.first_name || '',
+        date_joined: new Date().toISOString(),
+        is_active: false
+      };
+      pendingList.push(newUser);
+      localStorage.setItem('sfti_mock_pending_users', JSON.stringify(pendingList));
+      return { detail: 'Solicitud de registro enviada con éxito. Tu cuenta debe ser aprobada por el administrador.' };
+    }
+
+    const res = await fetch(`${this.apiBase}/register/`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Error al registrar el usuario');
+    return data;
+  }
+
+  async getPendingUsers() {
+    if (this.useMock) {
+      return JSON.parse(localStorage.getItem('sfti_mock_pending_users')) || [];
+    }
+    try {
+      const res = await fetch(`${this.apiBase}/users/pending/`);
+      if (!res.ok) return [];
+      return await res.json();
+    } catch (e) {
+      return JSON.parse(localStorage.getItem('sfti_mock_pending_users')) || [];
+    }
+  }
+
+  async approveUser(userId) {
+    if (this.useMock) {
+      let pendingList = JSON.parse(localStorage.getItem('sfti_mock_pending_users')) || [];
+      pendingList = pendingList.filter(u => u.id !== userId);
+      localStorage.setItem('sfti_mock_pending_users', JSON.stringify(pendingList));
+      return { detail: 'Usuario aprobado.' };
+    }
+    const res = await fetch(`${this.apiBase}/users/${userId}/approve/`, { method: 'POST' });
+    return await res.json();
+  }
+
+  async rejectUser(userId) {
+    if (this.useMock) {
+      let pendingList = JSON.parse(localStorage.getItem('sfti_mock_pending_users')) || [];
+      pendingList = pendingList.filter(u => u.id !== userId);
+      localStorage.setItem('sfti_mock_pending_users', JSON.stringify(pendingList));
+      return { detail: 'Usuario rechazado.' };
+    }
+    const res = await fetch(`${this.apiBase}/users/${userId}/reject/`, { method: 'POST' });
+    return await res.json();
+  }
+
+  async checkUserStatus(username) {
+    if (this.useMock) {
+      const pendingList = JSON.parse(localStorage.getItem('sfti_mock_pending_users')) || [];
+      const isPending = pendingList.some(u => u.username.toLowerCase() === username.toLowerCase());
+      if (isPending) return { status: 'pending' };
+      return { status: 'unknown' };
+    }
+    try {
+      const res = await fetch(`${this.apiBase}/users/check-status/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username })
+      });
+      return await res.json();
+    } catch (e) {
+      return { status: 'unknown' };
+    }
+  }
 }
 
 export const api = new ApiService();
+

@@ -31,7 +31,7 @@ export function sanitizeNumber(value, min = 0, max = 1000000) {
  */
 export function sanitizeSafeName(input, maxLength = 100) {
   if (typeof input !== 'string') return '';
-  // Remove control characters and HTML tags
-  const clean = input.replace(/[<>{}\/\\script]/gi, '').trim();
+  // Remove HTML tags and dangerous characters like <, >, {, }, /, \
+  const clean = input.replace(/<[^>]*>/g, '').replace(/[<>{}\/\\]/g, '').trim();
   return clean.substring(0, maxLength);
 }

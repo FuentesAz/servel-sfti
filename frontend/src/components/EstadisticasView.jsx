@@ -268,7 +268,7 @@ export default function EstadisticasView({ ordenes = [], tecnicos = [] }) {
         {/* Total Ingresos Card */}
         <div className="metric-card accent-revenue">
           <div className="metric-header">
-            <span className="metric-title">FACTURACIÓN TOTAL</span>
+            <span className="metric-title">TOTAL SERVICIO</span>
             <div className="metric-icon-box" style={{ backgroundColor: '#e0e7ff', color: '#4f46e5' }}>
               <DollarSign size={20} />
             </div>
@@ -335,7 +335,7 @@ export default function EstadisticasView({ ordenes = [], tecnicos = [] }) {
               <span>Rendimiento e Ingresos Generados por Técnico en el Período</span>
             </h3>
             <p style={{ fontSize: '0.85rem', color: '#64748b' }}>
-              Comparativa de Facturación Total vs Comisión del Técnico vs Ganancia del Taller
+              Comparativa de Total Servicio vs Comisión del Técnico vs Ganancia del Taller
             </p>
           </div>
         </div>
@@ -351,7 +351,7 @@ export default function EstadisticasView({ ordenes = [], tecnicos = [] }) {
                 contentStyle={{ borderRadius: '10px', border: '1px solid #cbd5e1', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
               />
               <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '0.85rem' }} />
-              <Bar dataKey="Ingresos" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Facturación Total" />
+              <Bar dataKey="Ingresos" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Total Servicio" />
               <Bar dataKey="ComisionTecnico" fill="#10b981" radius={[4, 4, 0, 0]} name="Comisión Técnico (50%)" />
               <Bar dataKey="GananciaTaller" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Ganancia Taller (50%)" />
             </BarChart>
@@ -437,7 +437,7 @@ export default function EstadisticasView({ ordenes = [], tecnicos = [] }) {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #f1f5f9', paddingBottom: '8px' }}>
-              <span style={{ color: '#64748b' }}>Facturación Total Bruta:</span>
+              <span style={{ color: '#64748b' }}>Total Servicio Bruto:</span>
               <strong style={{ fontSize: '1.05rem', color: '#0f172a' }}>{formatCurrency(analyticsSummary.totalIngresos)}</strong>
             </div>
 
